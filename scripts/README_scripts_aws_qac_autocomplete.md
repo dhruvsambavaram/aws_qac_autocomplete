@@ -66,15 +66,15 @@ Tokenizes the extracted search terms into individual words and computes word fre
 
 **Example usage:**
 ```bash
-./step3_split_final_search_term_to_words.sh final_terms.tsv tokens.tsv
+./step3_split_final_search_term_to_words.sh final_terms.tsv final_words.tsv
 ```
 
 **Output files:**
 ```
-tokens.tsv
-w2cnt_tokens.tsv
-sorted_w2cnt_tokens.tsv
-filtered_tokens.tsv
+final_words.tsv
+w2cnt_final_words.tsv
+sorted_w2cnt_final_words.tsv
+filtered_final_words.tsv
 ```
 
 ---
@@ -116,8 +116,3 @@ sudo apt install curl jq parquet-tools coreutils
 # Step 3: Tokenize and compute frequencies
 ./step3_split_final_search_term_to_words.sh final_terms.tsv tokens.tsv
 ```
-
----
-
-## 🧾 License
-This repository follows the same license as the main `aws_qac_autocomplete` project.
