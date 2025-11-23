@@ -12,7 +12,7 @@ TrieNode *trie_create_node(void) {
 		S_TriCountAllocCount++;
 
 		node->m_Char = input_char;
-		node->m_Count = 0;
+		node->m_Freq = 0;
 		node->m_Parent = nullptr;
 		for (int c_iter = 0; c_iter < ALPHABET_COUNT; c_iter++)
 		{
@@ -28,7 +28,7 @@ TrieNode* ModifyOrAddChildNode(TrieNode* parent, char input_char, int freq)
 	TrieNode* child_node = nullptr;
 	if (parent->m_Children[input_char] == nullptr)
 	{
-		child_node = CreateTrieNode(input_char);
+		child_node = trie_create_node(input_char);
 		parent->m_Children[input_char] = child_node;
 	}
 	else
@@ -61,23 +61,23 @@ bool trie_insert(TrieNode *root, const char * input_word, unsigned int freq) {
 
 
 int trie_autocomplete(TrieNode *root, const char *prefix, char** output, int output_count, int out_put_string_len) {
-	int input_str_len = (int)strlen(input_str);
-	TrieNode* input_str_node = head;
+	int input_str_len = (int)strlen(prefix);
+	TrieNode* input_str_node = root;
 	for (int c_iter = 0; c_iter < input_str_len; c_iter++)
 	{
-		input_str_node = input_str_node->m_Children[input_str[c_iter]];
-		if (input_str == nullptr)
+		input_str_node = input_str_node->m_Children[prefix[c_iter]];
+		if (prefix == nullptr)
 		{
 			return 0;
 		}
 	}
 
 	// get all possible 26 words under input_str_node
-	char max_words[ALPHABET_COUNT][512];
+	char max_words[ALPHABET_COUNT][MAX_WORD_LEN];
 	for (int w_iter = 0; w_iter < ALPHABET_COUNT; w_iter++)
 	{
 		char* curr_word = max_words[w_iter];
-		Snprintf(curr_word, 512, input_str);
+		snprintf(curr_word, 512, prefix);
 		int curr_word_len = input_str_len;
 		TrieNode* curr_node = input_str_node->m_Children[w_iter];
 		while (curr_node != nullptr && curr_node->m_IsWordEnding == false)
@@ -90,9 +90,9 @@ int trie_autocomplete(TrieNode *root, const char *prefix, char** output, int out
 			int max_child_count = 0;
 			for (int c_iter = 0; c_iter < ALPHABET_COUNT; c_iter++)
 			{
-				if (curr_node->m_Children[c_iter] != nullptr && curr_node->m_Children[c_iter]->m_Count > max_child_count)
+				if (curr_node->m_Children[c_iter] != nullptr && curr_node->m_Children[c_iter]->m_Freq > max_child_count)
 				{
-					max_child_count = curr_node->m_Children[c_iter]->m_Count;
+					max_child_count = curr_node->m_Children[c_iter]->m_Freq;
 					child_node = curr_node->m_Children[c_iter];
 				}
 			}
@@ -119,7 +119,7 @@ int trie_autocomplete(TrieNode *root, const char *prefix, char** output, int out
 		{
 			if (output_index[iter] == -1)
 			{
-				if (input_str_node->m_Children[iter] != nullptr && input_str_node->m_Children[iter]->m_Count < max_word_index_count)
+				if (input_str_node->m_Children[iter] != nullptr && input_str_node->m_Children[iter]->m_Freq < max_word_index_count)
 				{
 					max_word_indx = iter;
 					output_index[iter] = word_out_put_count;
@@ -135,7 +135,7 @@ int trie_autocomplete(TrieNode *root, const char *prefix, char** output, int out
 		}
 		else
 		{
-			Snprintf(output[word_out_put_count - 1], out_put_string_len, max_words[max_word_indx]);
+			snprintf(output[word_out_put_count - 1], out_put_string_len, max_words[max_word_indx]);
 		}
 	}
 
@@ -144,5 +144,15 @@ int trie_autocomplete(TrieNode *root, const char *prefix, char** output, int out
 
 
 void trie_free(TrieNode *root) {
-// TODO: recursively free all nodes
+   // recursively call and free memoory
+	if (root)
+	{
+		for (int c_iter = 0; c_iter < ALPHABET_COUNT; c_iter++)
+		{
+			TrieNode* child_node = root->m_Children[c_iter];
+			if (child_node != NULL)
+				trie_free(child_node);
+		}
+		free(root);
+	}
 }

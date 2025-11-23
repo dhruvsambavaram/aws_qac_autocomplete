@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 
-#define ALPHABET_SIZE 26
+#define ALPHABET_COUNT 26
 #define MAX_WORD_LEN 256
 
 
