@@ -27,10 +27,6 @@ TrieNode *trie_create_node(void);
 bool trie_insert(TrieNode *root, const char * input_word, unsigned int freq);
 
 
-// Returns true if the word exists
-bool trie_search(TrieNode *root, const char *word);
-
-
 // Given a prefix, gather up to `k` completions. The caller provides `results` array
 // `results` must be an array of `char *` of length at least k; the function will
 // allocate strings for each result which the caller must free.

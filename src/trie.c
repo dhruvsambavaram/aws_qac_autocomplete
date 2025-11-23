@@ -60,19 +60,86 @@ bool trie_insert(TrieNode *root, const char * input_word, unsigned int freq) {
 }
 
 
-bool trie_search(TrieNode *root, const char *word) {
-// TODO: implement search; return true if is_word at end
-return false; // replace
-}
-
-
 int trie_autocomplete(TrieNode *root, const char *prefix, char** output, int output_count, int out_put_string_len) {
-// TODO:
-// 1. Walk to prefix node
-// 2. From there, traverse subtree and collect full words into results (allocate copies)
-// 3. Stop when you reach k results
-// Return number of results collected
-return 0; // replace
+	int input_str_len = (int)strlen(input_str);
+	TrieNode* input_str_node = head;
+	for (int c_iter = 0; c_iter < input_str_len; c_iter++)
+	{
+		input_str_node = input_str_node->m_Children[input_str[c_iter]];
+		if (input_str == nullptr)
+		{
+			return 0;
+		}
+	}
+
+	// get all possible 26 words under input_str_node
+	char max_words[ALPHABET_COUNT][512];
+	for (int w_iter = 0; w_iter < ALPHABET_COUNT; w_iter++)
+	{
+		char* curr_word = max_words[w_iter];
+		Snprintf(curr_word, 512, input_str);
+		int curr_word_len = input_str_len;
+		TrieNode* curr_node = input_str_node->m_Children[w_iter];
+		while (curr_node != nullptr && curr_node->m_IsWordEnding == false)
+		{
+			curr_word[curr_word_len] = curr_node->m_Char;
+			curr_word_len++;
+
+			//change curr_node to next most frequent child
+			TrieNode* child_node = nullptr;
+			int max_child_count = 0;
+			for (int c_iter = 0; c_iter < ALPHABET_COUNT; c_iter++)
+			{
+				if (curr_node->m_Children[c_iter] != nullptr && curr_node->m_Children[c_iter]->m_Count > max_child_count)
+				{
+					max_child_count = curr_node->m_Children[c_iter]->m_Count;
+					child_node = curr_node->m_Children[c_iter];
+				}
+			}
+			curr_node = child_node;
+		}
+		//close the string
+		curr_word[curr_word_len] = '\0';
+	}
+
+	// now write the top output_count into result
+	int output_index[ALPHABET_COUNT];
+	for (int iter = 0; iter < ALPHABET_COUNT; iter++)
+	{
+		output_index[iter] = -1;
+	}
+
+	int word_out_put_count = 0;
+	for (int op_iter = 0; op_iter < output_count; op_iter++)
+	{
+		// next most frequent word
+		int max_word_indx = -1;
+		int max_word_index_count = 0;
+		for (int iter = 0; iter < ALPHABET_COUNT; iter++)
+		{
+			if (output_index[iter] == -1)
+			{
+				if (input_str_node->m_Children[iter] != nullptr && input_str_node->m_Children[iter]->m_Count < max_word_index_count)
+				{
+					max_word_indx = iter;
+					output_index[iter] = word_out_put_count;
+					word_out_put_count++;
+					break;
+				}
+			}
+		}
+
+		if (max_word_indx == -1)
+		{
+			break;
+		}
+		else
+		{
+			Snprintf(output[word_out_put_count - 1], out_put_string_len, max_words[max_word_indx]);
+		}
+	}
+
+	return word_out_put_count;
 }
 
 
