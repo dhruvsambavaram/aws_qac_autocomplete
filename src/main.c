@@ -45,8 +45,8 @@ int main(int argc, char **argv) {
         *tab_pos = '\0'; // Split the line
         unsigned int count = (unsigned int)atoi(tab_pos + 1);
         
-        // Only insert words with count > 10
-        if (count > 10 && strlen(word) > 0) {
+        // Only insert words with count > 5 and wordlen > 4
+        if (count > 5 && strlen(word) > 4) {
             // Normalize word to lowercase
             for (int i = 0; word[i]; i++) {
                 if (word[i] >= 'A' && word[i] <= 'Z') {
