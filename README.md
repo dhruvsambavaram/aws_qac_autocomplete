@@ -10,7 +10,7 @@ You type a prefix, it gives you the most common words that start with it. Sorted
 
 ```bash
 cd src
-gcc main.c trie.c -o main
+gcc main.c trie.c -o main 2>&1
 ./main ../data/sorted_w2cnt_final_words.tsv
 ```
 
