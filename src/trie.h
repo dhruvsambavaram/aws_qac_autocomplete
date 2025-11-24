@@ -3,6 +3,7 @@
 
 
 #include <stdio.h>
+#include <stdbool.h>
 
 
 #define ALPHABET_COUNT 26
@@ -14,9 +15,9 @@ typedef struct TrieNode {
 	char      m_Char;
 	int       m_Freq;
 	bool      m_IsWordEnding;
-	TrieNode* m_Children[ALPHABET_COUNT];
-	TrieNode* m_Parent;
-};
+	struct TrieNode* m_Children[ALPHABET_COUNT];
+	struct TrieNode* m_Parent;
+} TrieNode;
 
 
 // Create a new trie node

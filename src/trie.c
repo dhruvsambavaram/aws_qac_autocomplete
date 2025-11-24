@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 static int S_TriCountAllocCount = 0;
 
@@ -11,12 +12,13 @@ TrieNode *trie_create_node(void) {
 	{
 		S_TriCountAllocCount++;
 
-		node->m_Char = input_char;
+		node->m_Char = '\0';
 		node->m_Freq = 0;
-		node->m_Parent = nullptr;
+		node->m_IsWordEnding = false;
+		node->m_Parent = NULL;
 		for (int c_iter = 0; c_iter < ALPHABET_COUNT; c_iter++)
 		{
-			node->m_Children[c_iter] = nullptr;
+			node->m_Children[c_iter] = NULL;
 		}
 	}
 	return node;
@@ -25,15 +27,25 @@ TrieNode *trie_create_node(void) {
 
 TrieNode* ModifyOrAddChildNode(TrieNode* parent, char input_char, int freq)
 {
-	TrieNode* child_node = nullptr;
-	if (parent->m_Children[input_char] == nullptr)
+	// Convert character to array index (a-z -> 0-25)
+	int index = input_char - 'a';
+	if (index < 0 || index >= ALPHABET_COUNT) {
+		return NULL;
+	}
+	
+	TrieNode* child_node = NULL;
+	if (parent->m_Children[index] == NULL)
 	{
-		child_node = trie_create_node(input_char);
-		parent->m_Children[input_char] = child_node;
+		child_node = trie_create_node();
+		if (child_node) {
+			child_node->m_Char = input_char;
+			parent->m_Children[index] = child_node;
+			child_node->m_Parent = parent;
+		}
 	}
 	else
 	{
-		child_node = parent->m_Children[input_char];
+		child_node = parent->m_Children[index];
 	}
 	// update count on the node
 	if (child_node)
@@ -49,97 +61,111 @@ bool trie_insert(TrieNode *root, const char * input_word, unsigned int freq) {
 	TrieNode* curr_parent_node = root;
 	for (int c_iter = 0; c_iter < input_word_char_count; c_iter++)
 	{
-		curr_parent_node = ModifyOrAddChildNode(curr_parent_node, input_word[c_iter], count);
-		if (curr_parent_node == nullptr)
+		curr_parent_node = ModifyOrAddChildNode(curr_parent_node, input_word[c_iter], freq);
+		if (curr_parent_node == NULL)
 		{
 			return false;
 		}
 	}
 	curr_parent_node->m_IsWordEnding = true;
+	// Set the frequency on the final node
+	curr_parent_node->m_Freq = freq;
 	return true;
 }
 
 
+// Helper structure to store word-frequency pairs
+typedef struct {
+	char word[MAX_WORD_LEN];
+	unsigned int freq;
+} WordFreq;
+
+// Helper function to collect all words starting from a node
+static void collect_words(TrieNode* node, char* buffer, int buffer_len, WordFreq* words, int* word_count, int max_words) {
+	if (node == NULL || *word_count >= max_words) {
+		return;
+	}
+	
+	// If this node marks the end of a word, add it to the list
+	if (node->m_IsWordEnding) {
+		if (*word_count < max_words) {
+			strncpy(words[*word_count].word, buffer, MAX_WORD_LEN - 1);
+			words[*word_count].word[MAX_WORD_LEN - 1] = '\0';
+			words[*word_count].freq = node->m_Freq;
+			(*word_count)++;
+		}
+	}
+	
+	// Recursively traverse all children
+	for (int i = 0; i < ALPHABET_COUNT; i++) {
+		if (node->m_Children[i] != NULL) {
+			int new_len = buffer_len;
+			if (new_len < MAX_WORD_LEN - 1) {
+				buffer[new_len] = node->m_Children[i]->m_Char;
+				new_len++;
+				buffer[new_len] = '\0';
+				collect_words(node->m_Children[i], buffer, new_len, words, word_count, max_words);
+				buffer[buffer_len] = '\0'; // Restore buffer
+			}
+		}
+	}
+}
+
+// Comparison function for sorting by frequency (descending)
+static int compare_word_freq(const void* a, const void* b) {
+	WordFreq* wa = (WordFreq*)a;
+	WordFreq* wb = (WordFreq*)b;
+	if (wa->freq > wb->freq) return -1;
+	if (wa->freq < wb->freq) return 1;
+	return 0;
+}
+
 int trie_autocomplete(TrieNode *root, const char *prefix, char** output, int output_count, int out_put_string_len) {
 	int input_str_len = (int)strlen(prefix);
-	TrieNode* input_str_node = root;
+	TrieNode* prefix_node = root;
+	
+	// Navigate to the prefix node
 	for (int c_iter = 0; c_iter < input_str_len; c_iter++)
 	{
-		input_str_node = input_str_node->m_Children[prefix[c_iter]];
-		if (prefix == nullptr)
+		int index = prefix[c_iter] - 'a';
+		if (index < 0 || index >= ALPHABET_COUNT) {
+			return 0;
+		}
+		prefix_node = prefix_node->m_Children[index];
+		if (prefix_node == NULL)
 		{
 			return 0;
 		}
 	}
 
-	// get all possible 26 words under input_str_node
-	char max_words[ALPHABET_COUNT][MAX_WORD_LEN];
-	for (int w_iter = 0; w_iter < ALPHABET_COUNT; w_iter++)
-	{
-		char* curr_word = max_words[w_iter];
-		snprintf(curr_word, 512, prefix);
-		int curr_word_len = input_str_len;
-		TrieNode* curr_node = input_str_node->m_Children[w_iter];
-		while (curr_node != nullptr && curr_node->m_IsWordEnding == false)
-		{
-			curr_word[curr_word_len] = curr_node->m_Char;
-			curr_word_len++;
-
-			//change curr_node to next most frequent child
-			TrieNode* child_node = nullptr;
-			int max_child_count = 0;
-			for (int c_iter = 0; c_iter < ALPHABET_COUNT; c_iter++)
-			{
-				if (curr_node->m_Children[c_iter] != nullptr && curr_node->m_Children[c_iter]->m_Freq > max_child_count)
-				{
-					max_child_count = curr_node->m_Children[c_iter]->m_Freq;
-					child_node = curr_node->m_Children[c_iter];
-				}
-			}
-			curr_node = child_node;
-		}
-		//close the string
-		curr_word[curr_word_len] = '\0';
+	// Collect all words starting with the prefix
+	// Use a reasonable limit to avoid excessive memory usage
+	const int max_collect = 10000;
+	WordFreq* words = (WordFreq*)malloc(max_collect * sizeof(WordFreq));
+	if (words == NULL) {
+		return 0;
 	}
-
-	// now write the top output_count into result
-	int output_index[ALPHABET_COUNT];
-	for (int iter = 0; iter < ALPHABET_COUNT; iter++)
-	{
-		output_index[iter] = -1;
+	
+	int word_count = 0;
+	char buffer[MAX_WORD_LEN];
+	strncpy(buffer, prefix, MAX_WORD_LEN - 1);
+	buffer[MAX_WORD_LEN - 1] = '\0';
+	
+	// Collect all words from the subtree (including the prefix itself if it's a word)
+	collect_words(prefix_node, buffer, input_str_len, words, &word_count, max_collect);
+	
+	// Sort by frequency (descending)
+	qsort(words, word_count, sizeof(WordFreq), compare_word_freq);
+	
+	// Return the top output_count results
+	int result_count = (word_count < output_count) ? word_count : output_count;
+	for (int i = 0; i < result_count; i++) {
+		strncpy(output[i], words[i].word, out_put_string_len - 1);
+		output[i][out_put_string_len - 1] = '\0';
 	}
-
-	int word_out_put_count = 0;
-	for (int op_iter = 0; op_iter < output_count; op_iter++)
-	{
-		// next most frequent word
-		int max_word_indx = -1;
-		int max_word_index_count = 0;
-		for (int iter = 0; iter < ALPHABET_COUNT; iter++)
-		{
-			if (output_index[iter] == -1)
-			{
-				if (input_str_node->m_Children[iter] != nullptr && input_str_node->m_Children[iter]->m_Freq < max_word_index_count)
-				{
-					max_word_indx = iter;
-					output_index[iter] = word_out_put_count;
-					word_out_put_count++;
-					break;
-				}
-			}
-		}
-
-		if (max_word_indx == -1)
-		{
-			break;
-		}
-		else
-		{
-			snprintf(output[word_out_put_count - 1], out_put_string_len, max_words[max_word_indx]);
-		}
-	}
-
-	return word_out_put_count;
+	
+	free(words);
+	return result_count;
 }
 
 
