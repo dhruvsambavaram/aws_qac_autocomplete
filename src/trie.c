@@ -25,7 +25,7 @@ TrieNode *trie_create_node(void) {
 }
 
 
-TrieNode* ModifyOrAddChildNode(TrieNode* parent, char input_char, int freq)
+TrieNode* modify_or_add_child_node(TrieNode* parent, char input_char, int freq)
 {
 	// Convert character to array index (a-z -> 0-25)
 	int index = input_char - 'a';
@@ -61,7 +61,7 @@ bool trie_insert(TrieNode *root, const char * input_word, unsigned int freq) {
 	TrieNode* curr_parent_node = root;
 	for (int c_iter = 0; c_iter < input_word_char_count; c_iter++)
 	{
-		curr_parent_node = ModifyOrAddChildNode(curr_parent_node, input_word[c_iter], freq);
+		curr_parent_node = modify_or_add_child_node(curr_parent_node, input_word[c_iter], freq);
 		if (curr_parent_node == NULL)
 		{
 			return false;
