@@ -24,16 +24,18 @@ You can change how many results you want (default is 10):
 
 ```
 $ ./main ../data/sorted_w2cnt_final_words.tsv
-Loaded 374122 words into trie
+Loaded 525967 words into trie (indexing time: 0.189 seconds)
 prefix> hall
 halloween
 hall
 hallway
 ...
+(search time: 0.000115 seconds)
 prefix> iph
 iphone
 iphone case
 ...
+(search time: 0.000122 seconds)
 prefix> exit
 ```
 
