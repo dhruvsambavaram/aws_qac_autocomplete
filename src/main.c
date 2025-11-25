@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "trie.h"
+#include <time.h>
 
 #define DEFAULT_K 10
 
@@ -28,6 +29,7 @@ int main(int argc, char **argv) {
     }
 
     // Read words from TSV file and insert into trie (only words with count > 10)
+    clock_t start_index = clock();
     char line[512];
     int words_loaded = 0;
     while (fgets(line, sizeof(line), fp)) {
@@ -60,7 +62,9 @@ int main(int argc, char **argv) {
         }
     }
     
-    printf("Loaded %d words into trie\n", words_loaded);
+    clock_t end_index = clock();
+    double index_time = ((double)(end_index - start_index)) / CLOCKS_PER_SEC;
+    printf("Loaded %d words into trie (indexing time: %.3f seconds)\n", words_loaded, index_time);
     fclose(fp);
 
     // Interactive loop
@@ -93,8 +97,11 @@ int main(int argc, char **argv) {
         }
 
         // Call trie_autocomplete and print results
+        clock_t start_search = clock();
         int num_results = trie_autocomplete(root, input, results, k, max_result_len);
-        
+        clock_t end_search = clock();
+        double search_time = ((double)(end_search - start_search)) / CLOCKS_PER_SEC;
+
         if (num_results > 0) {
             for (int i = 0; i < num_results; i++) {
                 printf("%s\n", results[i]);
@@ -102,6 +109,7 @@ int main(int argc, char **argv) {
         } else {
             printf("No completions found\n");
         }
+        printf("(search time: %.6f seconds)\n", search_time);
     }
     
     // Free results memory
